@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.6)
-project(Skeleton)
+project(OurLICM)
 
 # LLVM uses C++17.
 set(CMAKE_CXX_STANDARD 17)
@@ -20,3 +20,4 @@ link_directories(${LLVM_LIBRARY_DIRS})
 
 # Our pass lives in this subdirectory.
 add_subdirectory(skeleton)
+add_subdirectory(OurLICM)
