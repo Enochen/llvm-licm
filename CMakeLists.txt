@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.6)
-project(OurLICM)
+project(LICM)
 
 # LLVM uses C++17.
 set(CMAKE_CXX_STANDARD 17)
 
 # Load LLVMConfig.cmake. If this fails, consider setting `LLVM_DIR` to point
 # to your LLVM installation's `lib/cmake/llvm` directory.
-find_package(LLVM REQUIRED CONFIG)
+find_package(LLVM 17 REQUIRED CONFIG)
 
 # Include the part of LLVM's CMake libraries that defines
 # `add_llvm_pass_plugin`.
@@ -19,5 +19,4 @@ include_directories(${LLVM_INCLUDE_DIRS})
 link_directories(${LLVM_LIBRARY_DIRS})
 
 # Our pass lives in this subdirectory.
-add_subdirectory(skeleton)
-add_subdirectory(OurLICM)
+add_subdirectory(licm)

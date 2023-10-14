@@ -22,9 +22,5 @@ Recurring Build:
 
 Run:
 
-    Empty skeleton pass
-    $ clang -fpass-plugin=`echo build/skeleton/SkeletonPass.*` something.c
-
-    OurLICM Pass
-    see build.sh
-
+    LICM Pass
+    $ clang -fpass-plugin=`echo build/licm/LICMPass.*` something.c
