@@ -1,7 +1,10 @@
+#include "llvm/Analysis/DomTreeUpdater.h"
+#include "llvm/Analysis/MemorySSAUpdater.h"
 #include "llvm/Pass.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
 
 using namespace llvm;
 
@@ -10,21 +13,20 @@ namespace {
 struct LICMPass : public PassInfoMixin<LICMPass> {
   PreservedAnalyses run(Loop &L, LoopAnalysisManager &AM,
                         LoopStandardAnalysisResults &AR, LPMUpdater &U) {
-    bool changed = false;
-    for (auto &BB : L.blocks()) {
-      for (auto I = BB->begin(), E = BB->end(); I != E;) {
-        Instruction &Inst = *I;
-        // makeLoopInvariant will set changed = true when appropriate
-        // (pass by reference)
-        if (L.makeLoopInvariant(&Inst, changed)) {
-          Inst.moveBefore(L.getHeader()->getFirstNonPHI());
-          I = Inst.eraseFromParent();
-        } else {
-          ++I;
-        }
+    DomTreeUpdater DTU(AR.DT, DomTreeUpdater::UpdateStrategy::Eager);
+    MemorySSAUpdater MSSAU(AR.MSSA);
+    auto *Preheader = L.getLoopPreheader();
+    if (!Preheader) {
+      auto *Header = L.getHeader();
+      Preheader = splitBlockBefore(Header, &*Header->begin(), &DTU, &AR.LI, &MSSAU);
+    }
+    for (auto *BB : L.blocks()) {
+      for (auto &Inst : *BB) {
+        bool Hoisted = false;
+        L.makeLoopInvariant(&Inst, Hoisted);
       }
     }
-    return changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
+    return PreservedAnalyses::none();
   };
 };
 
