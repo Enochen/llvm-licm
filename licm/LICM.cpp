@@ -1,5 +1,6 @@
 #include "llvm/Analysis/DomTreeUpdater.h"
 #include "llvm/Analysis/MemorySSAUpdater.h"
+#include "llvm/Analysis/ValueTracking.h"
 #include "llvm/Pass.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
@@ -43,10 +44,11 @@ struct LICMPass : public PassInfoMixin<LICMPass> {
       for (auto *BB : L.blocks()) {
         for (auto &Inst : *BB) {
           if (LI.contains(&Inst) || // Already have marked LI 
-              Inst.mayHaveSideEffects() || // Cannot hoist effectful instruction
+              !isSafeToSpeculativelyExecute(&Inst) || // Cannot hoist effectful instruction
               Inst.mayReadOrWriteMemory() || // Conservatively, don't hoist any memory ops
               !hasLoopInvariantOperands(L, LI, Inst) || // Operands not LI
-              Inst.getOpcode() == Instruction::Br) continue; // Cannot hoist branch
+              Inst.isTerminator() || // Cannot hoist terminators
+              isa<PHINode>(&Inst)) continue; // Cannot hoist phis
           
           // Otherwise, we mark this instruction as LI
           LI.insert(&Inst);
