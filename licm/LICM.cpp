@@ -46,9 +46,7 @@ struct LICMPass : public PassInfoMixin<LICMPass> {
           if (LI.contains(&Inst) || // Already have marked LI 
               !isSafeToSpeculativelyExecute(&Inst) || // Cannot hoist effectful instruction
               Inst.mayReadOrWriteMemory() || // Conservatively, don't hoist any memory ops
-              !hasLoopInvariantOperands(L, LI, Inst) || // Operands not LI
-              Inst.isTerminator() || // Cannot hoist terminators
-              isa<PHINode>(&Inst)) continue; // Cannot hoist phis
+              !hasLoopInvariantOperands(L, LI, Inst)) continue; // Operands not LI;
           
           // Otherwise, we mark this instruction as LI
           LI.insert(&Inst);
