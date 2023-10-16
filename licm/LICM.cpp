@@ -4,7 +4,6 @@
 #include "llvm/Pass.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
-#include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 
 using namespace llvm;
@@ -60,7 +59,7 @@ struct LICMPass : public PassInfoMixin<LICMPass> {
     for (auto *Inst : ToHoist) {
       Inst->moveBefore(Preheader->getTerminator());
     }
-    return PreservedAnalyses::none();
+    return ToHoist.empty() ? PreservedAnalyses::all() : PreservedAnalyses::none();
   };
 
   static StringRef name() {
