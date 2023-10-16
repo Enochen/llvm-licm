@@ -10,60 +10,64 @@ using namespace llvm;
 
 namespace {
 
+/**
+ * Return true if an instruction has loop invariant operands given the loop it resides in and
+ * a set of values already marked LI 
+ */
+bool hasLoopInvariantOperands(const Loop &L, const DenseSet<Value *> &LI, const Instruction &Inst) {
+  for (const auto &Use : Inst.operands()) {
+    if (LI.contains(&*Use))
+      // Operand already marked LI
+      continue;
+
+    if (auto *UseInst = dyn_cast<Instruction>(&*Use)) {
+      if (L.contains(UseInst)) {
+        // The def of this operand is inside the loop
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 struct LICMPass : public PassInfoMixin<LICMPass> {
   PreservedAnalyses run(Loop &L, LoopAnalysisManager &AM,
                         LoopStandardAnalysisResults &AR, LPMUpdater &U) {
-    auto changed = false;
-    // Create preheader
-    if (!L.getLoopPreheader()) {
-      AddPreheader(L, AR);
-      changed = true;
+    auto *Preheader = L.getLoopPreheader();
+    assert(Preheader && "Loop does not have preheader");
+    SmallVector<Instruction *> ToHoist;
+    DenseSet<Value *> LI;
+    bool Converged = false;
+    while (!Converged) {
+      Converged = true;
+      for (auto *BB : L.blocks()) {
+        for (auto &Inst : *BB) {
+          if (LI.contains(&Inst) || // Already have marked LI 
+              !isSafeToSpeculativelyExecute(&Inst) || // Cannot hoist effectful instruction
+              Inst.mayReadOrWriteMemory() || // Conservatively, don't hoist any memory ops
+              !hasLoopInvariantOperands(L, LI, Inst)) continue; // Operands not LI;
+          
+          // Otherwise, we mark this instruction as LI
+          LI.insert(&Inst);
+          ToHoist.push_back(&Inst);
+          Converged = false;
+        }
+      }
     }
 
-    auto iter_changed = true;
-    while (iter_changed) {
-      iter_changed = false;
-      for (auto &BB : L.blocks()) {
-        for (auto &Inst : *BB) {
-          // makeLoopInvariant will set changed = true when appropriate
-          // (pass by reference)
-          if (L.makeLoopInvariant(&Inst, changed)) {
-            iter_changed = true;
-            break;
-          }
-        }
-        // if (iter_changed) {
-        //   break;
-        // }
-      }
-    };
-
-    // std::cout << changed;
-    return changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
+    // Hoist all LI instructions to preheader
+    for (auto *Inst : ToHoist) {
+      Inst->moveBefore(Preheader->getTerminator());
+    }
+    return ToHoist.empty() ? PreservedAnalyses::all() : PreservedAnalyses::none();
   };
 
-  void AddPreheader(Loop &loop, LoopStandardAnalysisResults &AR) {
-    auto &LI = AR.LI;
-    DomTreeUpdater DTU(AR.DT, DomTreeUpdater::UpdateStrategy::Eager);
-    // MemorySSAUpdater MSSAU(AR.MSSA);
-    auto *header = loop.getHeader();
-
-    // Get all predecessors of header outside loop
-    auto outside_preds = std::vector<BasicBlock *>();
-    for (auto *pred : predecessors(header)) {
-      if (!loop.contains(pred)) {
-        outside_preds.push_back(pred);
-        // pred->getTerminator()->replaceSuccessorWith(header, preheader);
-      }
-    }
-
-    // Make preheader bb right before header
-    auto preheader = SplitBlockPredecessors(header, outside_preds, ".preheader",
-                                            &DTU, &AR.LI, nullptr, true);
+  static StringRef name() {
+    return "LICMPass";
   }
 };
 
-} // namespace
+} // namespace 
 
 extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
@@ -72,18 +76,11 @@ llvmGetPassPluginInfo() {
           .PluginVersion = "v0.1",
           .RegisterPassBuilderCallbacks = [](PassBuilder &PB) {
             PB.registerPipelineParsingCallback(
-                [](StringRef name, FunctionPassManager &FPM,
-                   ArrayRef<PassBuilder::PipelineElement>) {
-                  if (name == "LICMPass") {
-                    FPM.addPass(createFunctionToLoopPassAdaptor(LICMPass()));
-                    return true;
-                  }
-                  return false;
-                });
-            PB.registerPipelineStartEPCallback(
-                [](ModulePassManager &MPM, OptimizationLevel Level) {
-                  MPM.addPass(createModuleToFunctionPassAdaptor(
-                      createFunctionToLoopPassAdaptor(LICMPass())));
-                });
+              [](StringRef name, FunctionPassManager &FPM,
+                ArrayRef<PassBuilder::PipelineElement>) {
+                if (name != "LICMPass") return false;
+                FPM.addPass(createFunctionToLoopPassAdaptor(LICMPass()));
+                return true;
+              });
           }};
 }
