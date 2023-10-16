@@ -6,49 +6,53 @@ target triple = "arm64-apple-macosx13.0.0"
 @.str = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 
 ; Function Attrs: noinline nounwind ssp uwtable(sync)
-define i32 @sum_plus_sixes(i32* noundef %0, i32 noundef %1) #0 {
-  %3 = alloca i32*, align 8
-  %4 = alloca i32, align 4
+define i32 @sum_plus_tripled_val(i32* noundef %0, i32 noundef %1, i32 noundef %2) #0 {
+  %4 = alloca i32*, align 8
   %5 = alloca i32, align 4
   %6 = alloca i32, align 4
   %7 = alloca i32, align 4
-  store i32* %0, i32** %3, align 8
-  store i32 %1, i32* %4, align 4
-  store i32 0, i32* %5, align 4
-  store i32 0, i32* %6, align 4
-  br label %8
+  %8 = alloca i32, align 4
+  %9 = alloca i32, align 4
+  store i32* %0, i32** %4, align 8
+  store i32 %1, i32* %5, align 4
+  store i32 %2, i32* %6, align 4
+  store i32 0, i32* %7, align 4
+  store i32 0, i32* %8, align 4
+  br label %10
 
-8:                                                ; preds = %23, %2
-  %9 = load i32, i32* %6, align 4
-  %10 = load i32, i32* %4, align 4
-  %11 = icmp slt i32 %9, %10
-  br i1 %11, label %12, label %26
+10:                                               ; preds = %27, %3
+  %11 = load i32, i32* %8, align 4
+  %12 = load i32, i32* %6, align 4
+  %13 = icmp slt i32 %11, %12
+  br i1 %13, label %14, label %30
 
-12:                                               ; preds = %8
-  store i32 6, i32* %7, align 4
-  %13 = load i32*, i32** %3, align 8
-  %14 = load i32, i32* %6, align 4
-  %15 = sext i32 %14 to i64
-  %16 = getelementptr inbounds i32, i32* %13, i64 %15
-  %17 = load i32, i32* %16, align 4
-  %18 = load i32, i32* %5, align 4
-  %19 = add nsw i32 %18, %17
-  store i32 %19, i32* %5, align 4
-  %20 = load i32, i32* %7, align 4
-  %21 = load i32, i32* %5, align 4
-  %22 = add nsw i32 %21, %20
-  store i32 %22, i32* %5, align 4
-  br label %23
+14:                                               ; preds = %10
+  %15 = load i32, i32* %5, align 4
+  %16 = mul nsw i32 %15, 3
+  store i32 %16, i32* %9, align 4
+  %17 = load i32*, i32** %4, align 8
+  %18 = load i32, i32* %8, align 4
+  %19 = sext i32 %18 to i64
+  %20 = getelementptr inbounds i32, i32* %17, i64 %19
+  %21 = load i32, i32* %20, align 4
+  %22 = load i32, i32* %7, align 4
+  %23 = add nsw i32 %22, %21
+  store i32 %23, i32* %7, align 4
+  %24 = load i32, i32* %9, align 4
+  %25 = load i32, i32* %7, align 4
+  %26 = add nsw i32 %25, %24
+  store i32 %26, i32* %7, align 4
+  br label %27
 
-23:                                               ; preds = %12
-  %24 = load i32, i32* %6, align 4
-  %25 = add nsw i32 %24, 1
-  store i32 %25, i32* %6, align 4
-  br label %8, !llvm.loop !10
+27:                                               ; preds = %14
+  %28 = load i32, i32* %8, align 4
+  %29 = add nsw i32 %28, 1
+  store i32 %29, i32* %8, align 4
+  br label %10, !llvm.loop !10
 
-26:                                               ; preds = %8
-  %27 = load i32, i32* %5, align 4
-  ret i32 %27
+30:                                               ; preds = %10
+  %31 = load i32, i32* %7, align 4
+  ret i32 %31
 }
 
 ; Function Attrs: noinline nounwind ssp uwtable(sync)
@@ -57,7 +61,7 @@ define i32 @main() #0 {
   %2 = bitcast [4 x i32]* %1 to i8*
   call void @llvm.memset.p0i8.i64(i8* align 4 %2, i8 0, i64 16, i1 false)
   %3 = getelementptr inbounds [4 x i32], [4 x i32]* %1, i64 0, i64 0
-  %4 = call i32 @sum_plus_sixes(i32* noundef %3, i32 noundef 4)
+  %4 = call i32 @sum_plus_tripled_val(i32* noundef %3, i32 noundef 2, i32 noundef 4)
   %5 = call i32 (i8*, ...) @printf(i8* noundef getelementptr inbounds ([4 x i8], [4 x i8]* @.str, i64 0, i64 0), i32 noundef %4)
   ret i32 0
 }

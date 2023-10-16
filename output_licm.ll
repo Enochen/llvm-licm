@@ -6,29 +6,31 @@ target triple = "arm64-apple-macosx13.0.0"
 @.str = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 
 ; Function Attrs: noinline nounwind ssp uwtable(sync)
-define i32 @sum_plus_sixes(ptr noundef %0, i32 noundef %1) #0 {
-  br label %3
+define i32 @sum_plus_tripled_val(ptr noundef %0, i32 noundef %1, i32 noundef %2) #0 {
+  %4 = mul nsw i32 %1, 3
+  br label %5
 
-3:                                                ; preds = %11, %2
-  %.01 = phi i32 [ 0, %2 ], [ %10, %11 ]
-  %.0 = phi i32 [ 0, %2 ], [ %12, %11 ]
-  %4 = icmp slt i32 %.0, %1
-  br i1 %4, label %5, label %13
+5:                                                ; preds = %13, %3
+  %.01 = phi i32 [ 0, %3 ], [ %12, %13 ]
+  %.0 = phi i32 [ 0, %3 ], [ %14, %13 ]
+  %6 = icmp slt i32 %.0, %2
+  br i1 %6, label %7, label %15
 
-5:                                                ; preds = %3
-  %6 = sext i32 %.0 to i64
-  %7 = getelementptr inbounds i32, ptr %0, i64 %6
-  %8 = load i32, ptr %7, align 4
-  %9 = add nsw i32 %.01, %8
-  %10 = add nsw i32 %9, 6
-  br label %11
+7:                                                ; preds = %5
+  %8 = sext i32 %.0 to i64
+  %9 = getelementptr inbounds i32, ptr %0, i64 %8
+  %10 = load i32, ptr %9, align 4
+  %11 = add nsw i32 %.01, %10
+  %12 = add nsw i32 %11, %4
+  br label %13
 
-11:                                               ; preds = %5
-  %12 = add nsw i32 %.0, 1
-  br label %3, !llvm.loop !10
+13:                                               ; preds = %7
+  %14 = add nsw i32 %.0, 1
+  br label %5, !llvm.loop !10
 
-13:                                               ; preds = %3
-  ret i32 %.01
+15:                                               ; preds = %5
+  %.01.lcssa = phi i32 [ %.01, %5 ]
+  ret i32 %.01.lcssa
 }
 
 ; Function Attrs: noinline nounwind ssp uwtable(sync)
@@ -37,7 +39,7 @@ define i32 @main() #0 {
   %2 = bitcast ptr %1 to ptr
   call void @llvm.memset.p0.i64(ptr align 4 %2, i8 0, i64 16, i1 false)
   %3 = getelementptr inbounds [4 x i32], ptr %1, i64 0, i64 0
-  %4 = call i32 @sum_plus_sixes(ptr noundef %3, i32 noundef 4)
+  %4 = call i32 @sum_plus_tripled_val(ptr noundef %3, i32 noundef 2, i32 noundef 4)
   %5 = call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %4)
   ret i32 0
 }
