@@ -21,7 +21,7 @@ bool hasLoopInvariantOperands(const Loop &L, const DenseSet<Value *> &LI, const 
       continue;
 
     if (auto *UseInst = dyn_cast<Instruction>(&*Use)) {
-      if (L.contains(UseInst->getParent())) {
+      if (L.contains(UseInst)) {
         // The def of this operand is inside the loop
         return false;
       }
