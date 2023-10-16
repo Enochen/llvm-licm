@@ -28,19 +28,26 @@ struct LICMPass : public PassInfoMixin<LICMPass> {
     }
     return PreservedAnalyses::none();
   };
+
+  static StringRef name() {
+    return "LICMPass";
+  }
 };
 
-} // namespace
+} // namespace 
 
 extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
   return {.APIVersion = LLVM_PLUGIN_API_VERSION,
-          .PluginName = "LICM pass",
+          .PluginName = "LICMPass",
           .PluginVersion = "v0.1",
           .RegisterPassBuilderCallbacks = [](PassBuilder &PB) {
-            PB.registerLateLoopOptimizationsEPCallback(
-                [](LoopPassManager &LPM, OptimizationLevel Level) {
-                  LPM.addPass(LICMPass());
-                });
+            PB.registerPipelineParsingCallback(
+              [](StringRef name, FunctionPassManager &FPM,
+                ArrayRef<PassBuilder::PipelineElement>) {
+                if (name != "LICMPass") return false;
+                FPM.addPass(createFunctionToLoopPassAdaptor(LICMPass()));
+                return true;
+              });
           }};
 }
