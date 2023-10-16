@@ -10,11 +10,19 @@ using namespace llvm;
 
 namespace {
 
+/**
+ * Return true if an instruction has loop invariant operands given the loop it resides in and
+ * a set of values already marked LI 
+ */
 bool hasLoopInvariantOperands(const Loop &L, const DenseSet<Value *> &LI, const Instruction &Inst) {
   for (const auto &Use : Inst.operands()) {
-    if (LI.contains(&*Use)) continue;
+    if (LI.contains(&*Use))
+      // Operand already marked LI
+      continue;
+
     if (auto *UseInst = dyn_cast<Instruction>(&*Use)) {
       if (L.contains(UseInst->getParent())) {
+        // The def of this operand is inside the loop
         return false;
       }
     }
@@ -25,27 +33,29 @@ bool hasLoopInvariantOperands(const Loop &L, const DenseSet<Value *> &LI, const 
 struct LICMPass : public PassInfoMixin<LICMPass> {
   PreservedAnalyses run(Loop &L, LoopAnalysisManager &AM,
                         LoopStandardAnalysisResults &AR, LPMUpdater &U) {
-    DomTreeUpdater DTU(AR.DT, DomTreeUpdater::UpdateStrategy::Eager);
-    MemorySSAUpdater MSSAU(AR.MSSA);
     auto *Preheader = L.getLoopPreheader();
     assert(Preheader && "Loop does not have preheader");
     SmallVector<Instruction *> ToHoist;
     DenseSet<Value *> LI;
-    bool converged = false;
-    while (!converged) {
-      converged = true;
+    bool Converged = false;
+    while (!Converged) {
+      Converged = true;
       for (auto *BB : L.blocks()) {
         for (auto &Inst : *BB) {
-          if (LI.contains(&Inst) || 
-              Inst.mayHaveSideEffects() ||
-              !hasLoopInvariantOperands(L, LI, Inst) || 
-              Inst.getOpcode() == Instruction::Br) continue;
+          if (LI.contains(&Inst) || // Already have marked LI 
+              Inst.mayHaveSideEffects() || // Cannot hoist effectful instruction
+              !hasLoopInvariantOperands(L, LI, Inst) || // Operands not LI
+              Inst.getOpcode() == Instruction::Br) continue; // Cannot hoist branch
+          
+          // Otherwise, we mark this instruction as LI
           LI.insert(&Inst);
           ToHoist.push_back(&Inst);
-          converged = false;
+          Converged = false;
         }
       }
     }
+
+    // Hoist all LI instructions to preheader
     for (auto *Inst : ToHoist) {
       Inst->moveBefore(Preheader->getTerminator());
     }
