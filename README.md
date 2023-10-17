@@ -19,6 +19,9 @@ Recurring Build:
     $ cd llvm-licm
     $ ./build.sh
 
+Test:
+
+    $ ./test/test-tsvc.sh
 
 Run:
 
