@@ -7,5 +7,5 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   OPT_PATH=`brew --prefix llvm`/bin/opt
 fi
 
-$OPT_PATH -S -passes=mem2reg test/tsvc2.ll -o test/tsvc_mem2reg.ll
+$OPT_PATH -S -passes=mem2reg test/tsvc.ll -o test/tsvc_mem2reg.ll
 $OPT_PATH -S -load-pass-plugin=`ls build/licm/LICMPass.*` -passes=LICMPass test/tsvc_mem2reg.ll -o test/tsvc_licm.ll
