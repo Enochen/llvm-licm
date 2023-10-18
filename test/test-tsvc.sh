@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # clang is used to create ll file
 clang -Xclang -disable-O0-optnone -O0 -emit-llvm -S test/tsvc.c -o test/tsvc.ll
 
@@ -9,3 +11,6 @@ fi
 
 $OPT_PATH -S -passes=mem2reg test/tsvc.ll -o test/tsvc_mem2reg.ll
 $OPT_PATH -S -load-pass-plugin=`ls build/licm/LICMPass.*` -passes=LICMPass test/tsvc_mem2reg.ll -o test/tsvc_licm.ll
+
+clang -lm -x ir test/tsvc_mem2reg.ll -o test/tsvc_mem2reg
+clang -lm -x ir test/tsvc_licm.ll -o test/tsvc_licm
