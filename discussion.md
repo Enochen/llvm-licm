@@ -27,7 +27,7 @@ We implemented loop invariant code motion as an LLVM pass.
     - Register Pressure: Hoisting instructions to a loop preheader can increase their live ranges, increasing register pressure and making register allocation more difficult. In the worst case, this could result in an additional variable being spilled to the stack. In example `s2275`, an instruction is hoisted from the body of an doubly-nested inner loop to the preheader of its enclosing loop, potentially supporting its hypothesis. If we had more time, we would inspect the assembly to confirm these suspicions.
     - Simple noise: We ran the benchmarks locally, and these processes could be descheduled by the OS. Ideally, we would be able to run these benchmarks hundreds of times in a controlled environment.
     - We began a Docker deployment on an eight core private cloud instance running Ubuntu 22.04 to capture more of this variance but running all the unoptimized benchmarks would not complete in time. Partial results are [here](https://docs.google.com/spreadsheets/d/1wh30UqOsNchjqcEBJ4zBpSVQNxE-CCoDFKEBek9QTuo/edit#gid=0).
-  
+- For all benchmarks *modified* by LICM, we found an average 1.96% wall-clock speedup. However, the variance of these estimate is quite high, and we would need to conduct many more runs to be confident it is meaningful. Further, we found that LICM only modified 43/151 benchmarks; the others were untouched. Below, we depict the average speedup from LICM over 2 runs for these 43 benchmarks.
 <img width="603" alt="Screenshot 2023-10-17 at 11 34 57 PM" src="https://github.com/Enochen/llvm-licm/assets/73757337/0b71e6de-96e0-485b-b714-7c16191f957a">
 
 ## Difficulties
