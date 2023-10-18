@@ -27,6 +27,7 @@ We implemented loop invariant code motion as an LLVM pass.
     - Register Pressure: Hoisting instructions to a loop preheader can increase their live ranges, increasing register pressure and making register allocation more difficult. In the worst case, this could result in an additional variable being spilled to the stack. In example `s2275`, an instruction is hoisted from the body of an doubly-nested inner loop to the preheader of its enclosing loop, potentially supporting its hypothesis. If we had more time, we would inspect the assembly to confirm these suspicions.
     - Simple noise: We ran the benchmarks locally, and these processes could be descheduled by the OS. Ideally, we would be able to run these benchmarks hundreds of times in a controlled environment.
   
+<img width="603" alt="Screenshot 2023-10-17 at 11 34 57 PM" src="https://github.com/Enochen/llvm-licm/assets/73757337/0b71e6de-96e0-485b-b714-7c16191f957a">
 
 ## Difficulties
 
