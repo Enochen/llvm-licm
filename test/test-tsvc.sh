@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # clang is used to create ll file
 clang -Xclang -O3 -emit-llvm -S test/tsvc.c -o test/tsvc.ll
 
@@ -13,7 +15,7 @@ ${LLVM_BIN_DIR}opt -S -passes=$PASSES test/tsvc.ll -o test/tsvc_mem2reg.ll
 ${LLVM_BIN_DIR}opt -S -load-pass-plugin=`ls build/licm/LICMPass.*` -passes=LICMPass test/tsvc_mem2reg.ll -o test/tsvc_licm.ll
 
 if [[ $1 == "--obj" ]]; then 
-  ${LLVM_BIN_DIR}clang -O0 -x ir test/tsvc_mem2reg.ll -o test/tsvc_mem2reg.exe
-  ${LLVM_BIN_DIR}/clang -O0 -x ir test/tsvc_licm.ll -o test/tsvc_licm.exe
+  ${LLVM_BIN_DIR}clang -O0 -lm -x ir test/tsvc_mem2reg.ll -o test/tsvc_mem2reg.exe
+  ${LLVM_BIN_DIR}/clang -O0 -lm -x ir test/tsvc_licm.ll -o test/tsvc_licm.exe
   rm test/tsvc_mem2reg.ll test/tsvc_licm.ll test/tsvc.ll
 fi
